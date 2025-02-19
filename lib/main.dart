@@ -1,5 +1,5 @@
 // Digital Pet App - Flutter
-// Created by: [Your Name] & [Partner's Name]
+// Created by: [Hasin Rahman] & [Hugo Yang]
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -14,15 +14,28 @@ class DigitalPetApp extends StatefulWidget {
 }
 
 class _DigitalPetAppState extends State<DigitalPetApp> {
-  String petName = "Your Pet"; // Default pet name
+  String petName = "Your Pet";
   int happinessLevel = 50;
   int hungerLevel = 50;
+  int energyLevel = 80; // New energy level
   TextEditingController _nameController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _startHungerTimer();
+    _startEnergyDrain(); // Start decreasing energy over time
+    _startHungerTimer(); // Start increasing hunger over time
+  }
+
+  // Timer to decrease energy automatically over time
+  void _startEnergyDrain() {
+    Timer.periodic(Duration(seconds: 30), (timer) {
+      if (mounted) {
+        setState(() {
+          energyLevel = (energyLevel - 5).clamp(0, 100);
+        });
+      }
+    });
   }
 
   // Timer to increase hunger automatically
@@ -39,18 +52,20 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     });
   }
 
-  // Function to play with the pet
+  // Function to play with the pet (decreases energy)
   void _playWithPet() {
     setState(() {
       happinessLevel = (happinessLevel + 10).clamp(0, 100);
+      energyLevel = (energyLevel - 10).clamp(0, 100);
       _updateHunger();
     });
   }
 
-  // Function to feed the pet
+  // Function to feed the pet (increases energy)
   void _feedPet() {
     setState(() {
       hungerLevel = (hungerLevel - 10).clamp(0, 100);
+      energyLevel = (energyLevel + 15).clamp(0, 100);
       _updateHappiness();
     });
   }
@@ -137,7 +152,7 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
               child: Column(
                 children: [
                   Image.asset(
-                    'assets/pet.png', // Ensure you have an image at assets/pet.png
+                    'assets/pet.png', // Ensure this image is in the assets folder
                     height: 150,
                   ),
                   SizedBox(height: 10),
@@ -160,6 +175,31 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
             Text('Hunger Level: $hungerLevel', style: TextStyle(fontSize: 20)),
 
             SizedBox(height: 30),
+
+            // Energy Bar Widget
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Energy Level:',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 5),
+                LinearProgressIndicator(
+                  value:
+                      energyLevel /
+                      100, // Converts energy level to a percentage (0 to 1)
+                  backgroundColor: Colors.grey[300],
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    energyLevel > 70
+                        ? Colors.green
+                        : (energyLevel > 30 ? Colors.yellow : Colors.red),
+                  ),
+                  minHeight: 15,
+                ),
+                SizedBox(height: 20),
+              ],
+            ),
 
             // Interaction Buttons
             Row(
