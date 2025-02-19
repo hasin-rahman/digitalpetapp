@@ -1,5 +1,5 @@
 // Digital Pet App - Flutter
-// Created by: [Hasin Rahman] & [Hugo Yang]
+// Created by: Hasin Rahman & Hugo Yang
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -17,11 +17,12 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
   String petName = "Your Pet";
   int happinessLevel = 50;
   int hungerLevel = 50;
-  int energyLevel = 80; // New energy level
+  int energyLevel = 80;
   TextEditingController _nameController = TextEditingController();
-  late Timer _hungerTimer;
-  late Timer _winTimer;
+  String _selectedActivity = 'Play';
+  late Timer _hungerTimer, _winTimer;
   int _secondsSurvived = 0;
+  int _winTime = 180; // 3-minute win condition
 
   @override
   void initState() {
@@ -30,9 +31,9 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     _startWinTimer();
   }
 
-  // Timer to increase hunger automatically
+  // Automatically increase hunger every 30 seconds
   void _startHungerTimer() {
-    Timer.periodic(Duration(seconds: 15), (timer) {
+    _hungerTimer = Timer.periodic(Duration(seconds: 30), (timer) {
       if (mounted) {
         setState(() {
           hungerLevel = (hungerLevel + 5).clamp(0, 100);
@@ -42,32 +43,32 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     });
   }
 
+  // Check if the player survives for 3 minutes while keeping the pet happy
   void _startWinTimer() {
     _winTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-      if (happinessLevel > 70 && hungerLevel < 30) {
+      if (happinessLevel > 80) {
         setState(() {
           _secondsSurvived++;
         });
 
-        if (_secondsSurvived >= 60) {
+        if (_secondsSurvived >= _winTime) {
           _showWinDialog();
         }
       } else {
-        _secondsSurvived = 0; // Reset win timer if conditions are not met
+        _secondsSurvived = 0;
       }
     });
   }
 
-  // Function to play with the pet (decreases energy)
+  // Activities affecting pet's state
   void _playWithPet() {
     setState(() {
       happinessLevel = (happinessLevel + 10).clamp(0, 100);
       energyLevel = (energyLevel - 10).clamp(0, 100);
-      _updateHunger();
+      _increaseHunger();
     });
   }
 
-  // Function to feed the pet (increases energy)
   void _feedPet() {
     setState(() {
       hungerLevel = (hungerLevel - 10).clamp(0, 100);
@@ -76,7 +77,38 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     });
   }
 
-  // Update happiness based on hunger level
+  void _letPetSleep() {
+    setState(() {
+      energyLevel = 100;
+      happinessLevel = (happinessLevel - 5).clamp(
+        0,
+        100,
+      ); // Slight boredom after sleeping
+    });
+  }
+
+  void _walkPet() {
+    setState(() {
+      happinessLevel = (happinessLevel + 15).clamp(0, 100);
+      hungerLevel = (hungerLevel + 10).clamp(0, 100);
+      energyLevel = (energyLevel - 10).clamp(0, 100);
+    });
+  }
+
+  // Perform the selected activity
+  void _performSelectedActivity() {
+    if (_selectedActivity == 'Play') {
+      _playWithPet();
+    } else if (_selectedActivity == 'Feed') {
+      _feedPet();
+    } else if (_selectedActivity == 'Sleep') {
+      _letPetSleep();
+    } else if (_selectedActivity == 'Walk') {
+      _walkPet();
+    }
+  }
+
+  // Update happiness based on hunger
   void _updateHappiness() {
     if (hungerLevel < 30) {
       happinessLevel = (happinessLevel - 20).clamp(0, 100);
@@ -85,32 +117,29 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     }
   }
 
-  // Increase hunger when playing
-  void _updateHunger() {
+  void _increaseHunger() {
     hungerLevel = (hungerLevel + 5).clamp(0, 100);
-    if (hungerLevel > 100) {
-      hungerLevel = 100;
+    if (hungerLevel >= 100) {
       happinessLevel = (happinessLevel - 20).clamp(0, 100);
     }
   }
 
   // Get the pet's mood color
   Color _getMoodColor() {
-    if (happinessLevel > 70) return Colors.green; // Happy
-    if (happinessLevel >= 30) return Colors.yellow; // Neutral
-    return Colors.red; // Unhappy
+    if (happinessLevel > 70) return Colors.green;
+    if (happinessLevel >= 30) return Colors.yellow;
+    return Colors.red;
   }
 
-  // Get the pet's mood status
   String _getMoodStatus() {
     if (happinessLevel > 70) return "Happy 😊";
     if (happinessLevel >= 30) return "Neutral 😐";
     return "Unhappy 😢";
   }
 
-  // Function to check if the pet is too hungry or unhappy
+  // Check if pet reaches critical levels
   void _checkPetStatus() {
-    if (hungerLevel >= 100 || happinessLevel <= 0) {
+    if (hungerLevel >= 100 || happinessLevel <= 10) {
       _showGameOverDialog();
     }
   }
@@ -142,7 +171,9 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text("You Win! 🎉"),
-          content: Text("You've successfully kept $petName happy and healthy for a whole minute! 🏆"),
+          content: Text(
+            "You've successfully kept $petName happy and healthy for 3 minutes! 🏆",
+          ),
           actions: [
             TextButton(
               onPressed: () {
@@ -157,12 +188,12 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     );
   }
 
-  // Function to reset game after pet runs away
   void _resetGame() {
     setState(() {
       happinessLevel = 50;
       hungerLevel = 50;
-      _secondsSurvived = 0; // Reset win timer counter
+      energyLevel = 80;
+      _secondsSurvived = 0;
     });
   }
 
@@ -175,7 +206,6 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Pet Name Input Field
             TextField(
               controller: _nameController,
               decoration: InputDecoration(
@@ -197,14 +227,7 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
             ),
             SizedBox(height: 20),
 
-            // Display Pet Name
-            Text(
-              'Name: $petName',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 20),
-
-            // Pet Image with Mood Indicator
+            // Pet Image & Mood Indicator
             Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -214,8 +237,11 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
               child: Column(
                 children: [
                   Image.asset(
-                    'assets/pet.png', // Ensure this image is in the assets folder
+                    'assets/pet.png', // Ensure this file exists in assets/
                     height: 150,
+                    errorBuilder:
+                        (context, error, stackTrace) =>
+                            Text("Pet image not found!"),
                   ),
                   SizedBox(height: 10),
                   Text(
@@ -225,49 +251,40 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
                 ],
               ),
             ),
+
             SizedBox(height: 20),
 
-            // Display Happiness and Hunger Levels
-            Text(
-              'Happiness Level: $happinessLevel',
-              style: TextStyle(fontSize: 20),
-            ),
-            SizedBox(height: 10),
-            Text('Hunger Level: $hungerLevel', style: TextStyle(fontSize: 20)),
-            SizedBox(height: 30),
-
-            // Energy Bar Widget
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Energy Level:',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 5),
-                LinearProgressIndicator(
-                  value:
-                      energyLevel /
-                      100, // Converts energy level to a percentage (0 to 1)
-                  backgroundColor: Colors.grey[300],
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    energyLevel > 70
-                        ? Colors.green
-                        : (energyLevel > 30 ? Colors.yellow : Colors.red),
-                  ),
-                  minHeight: 15,
-                ),
-                SizedBox(height: 20),
-              ],
+            // Energy Bar
+            LinearProgressIndicator(
+              value: energyLevel / 100,
+              backgroundColor: Colors.grey[300],
+              valueColor: AlwaysStoppedAnimation<Color>(
+                energyLevel > 70
+                    ? Colors.green
+                    : (energyLevel > 30 ? Colors.yellow : Colors.red),
+              ),
+              minHeight: 15,
             ),
 
-            // Interaction Buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(onPressed: _playWithPet, child: Text('Play')),
-                ElevatedButton(onPressed: _feedPet, child: Text('Feed')),
-              ],
+            SizedBox(height: 20),
+            DropdownButton<String>(
+              value: _selectedActivity,
+              items:
+                  ['Play', 'Feed', 'Sleep', 'Walk']
+                      .map(
+                        (activity) => DropdownMenuItem(
+                          value: activity,
+                          child: Text(activity),
+                        ),
+                      )
+                      .toList(),
+              onChanged:
+                  (String? newValue) =>
+                      setState(() => _selectedActivity = newValue!),
+            ),
+            ElevatedButton(
+              onPressed: _performSelectedActivity,
+              child: Text("Perform Activity"),
             ),
           ],
         ),
