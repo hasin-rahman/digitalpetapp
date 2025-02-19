@@ -1,5 +1,9 @@
+// Digital Pet App - Flutter
+// Created by: [Your Name] & [Partner's Name]
+
+import 'dart:async';
 import 'package:flutter/material.dart';
-//test edit
+
 void main() {
   runApp(MaterialApp(home: DigitalPetApp()));
 }
@@ -10,11 +14,32 @@ class DigitalPetApp extends StatefulWidget {
 }
 
 class _DigitalPetAppState extends State<DigitalPetApp> {
-  String petName = "Your Pet";
+  String petName = "Your Pet"; // Default pet name
   int happinessLevel = 50;
   int hungerLevel = 50;
+  TextEditingController _nameController = TextEditingController();
 
-  // Function to increase happiness and update hunger when playing with the pet
+  @override
+  void initState() {
+    super.initState();
+    _startHungerTimer();
+  }
+
+  // Timer to increase hunger automatically
+  void _startHungerTimer() {
+    Timer.periodic(Duration(seconds: 30), (timer) {
+      if (mounted) {
+        setState(() {
+          hungerLevel = (hungerLevel + 5).clamp(0, 100);
+          if (hungerLevel >= 100) {
+            happinessLevel = (happinessLevel - 20).clamp(0, 100);
+          }
+        });
+      }
+    });
+  }
+
+  // Function to play with the pet
   void _playWithPet() {
     setState(() {
       happinessLevel = (happinessLevel + 10).clamp(0, 100);
@@ -22,7 +47,7 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     });
   }
 
-  // Function to decrease hunger and update happiness when feeding the pet
+  // Function to feed the pet
   void _feedPet() {
     setState(() {
       hungerLevel = (hungerLevel - 10).clamp(0, 100);
@@ -39,7 +64,7 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     }
   }
 
-  // Increase hunger level slightly when playing with the pet
+  // Increase hunger when playing
   void _updateHunger() {
     hungerLevel = (hungerLevel + 5).clamp(0, 100);
     if (hungerLevel > 100) {
@@ -48,32 +73,102 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     }
   }
 
+  // Get the pet's mood color
+  Color _getMoodColor() {
+    if (happinessLevel > 70) return Colors.green; // Happy
+    if (happinessLevel >= 30) return Colors.yellow; // Neutral
+    return Colors.red; // Unhappy
+  }
+
+  // Get the pet's mood status
+  String _getMoodStatus() {
+    if (happinessLevel > 70) return "Happy 😊";
+    if (happinessLevel >= 30) return "Neutral 😐";
+    return "Unhappy 😢";
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Digital Pet')),
-      body: Center(
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text('Name: $petName', style: TextStyle(fontSize: 20.0)),
-            SizedBox(height: 16.0),
+          children: [
+            // Pet Name Input Field
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: "Enter Pet Name",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  petName =
+                      _nameController.text.isNotEmpty
+                          ? _nameController.text
+                          : "Your Pet";
+                });
+              },
+              child: Text("Set Pet Name"),
+            ),
+
+            SizedBox(height: 20),
+
+            // Display Pet Name
+            Text(
+              'Name: $petName',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+
+            SizedBox(height: 20),
+
+            // Pet Image with Mood Indicator
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _getMoodColor(),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Column(
+                children: [
+                  Image.asset(
+                    'assets/pet.png', // Ensure you have an image at assets/pet.png
+                    height: 150,
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    _getMoodStatus(),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+
+            SizedBox(height: 20),
+
+            // Display Happiness and Hunger Levels
             Text(
               'Happiness Level: $happinessLevel',
-              style: TextStyle(fontSize: 20.0),
+              style: TextStyle(fontSize: 20),
             ),
-            SizedBox(height: 16.0),
-            Text(
-              'Hunger Level: $hungerLevel',
-              style: TextStyle(fontSize: 20.0),
+            SizedBox(height: 10),
+            Text('Hunger Level: $hungerLevel', style: TextStyle(fontSize: 20)),
+
+            SizedBox(height: 30),
+
+            // Interaction Buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(onPressed: _playWithPet, child: Text('Play')),
+                ElevatedButton(onPressed: _feedPet, child: Text('Feed')),
+              ],
             ),
-            SizedBox(height: 32.0),
-            ElevatedButton(
-              onPressed: _playWithPet,
-              child: Text('Play with Your Pet'),
-            ),
-            SizedBox(height: 16.0),
-            ElevatedButton(onPressed: _feedPet, child: Text('Feed Your Pet')),
           ],
         ),
       ),
