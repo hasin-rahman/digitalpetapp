@@ -27,6 +27,7 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
   void initState() {
     super.initState();
     _startHungerTimer();
+    _startWinTimer();
   }
 
   // Timer to increase hunger automatically
